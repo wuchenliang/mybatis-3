@@ -109,13 +109,17 @@ public class XMLConfigBuilder extends BaseBuilder {
       loadCustomLogImpl(settings);
       typeAliasesElement(root.evalNode("typeAliases"));
       pluginElement(root.evalNode("plugins"));
+      //objectFactory 一般用于ORM映射时返回对象转换
       objectFactoryElement(root.evalNode("objectFactory"));
+      //MateObject 方便反射
       objectWrapperFactoryElement(root.evalNode("objectWrapperFactory"));
       reflectorFactoryElement(root.evalNode("reflectorFactory"));
       settingsElement(settings);
       // read it after objectFactory and objectWrapperFactory issue #631
       environmentsElement(root.evalNode("environments"));
+      //适用于多种数据库mapper实现，实现动态切换数据库
       databaseIdProviderElement(root.evalNode("databaseIdProvider"));
+      //用于转换对象，在预处理语句或者返回result，将取值转换为合适的java类型
       typeHandlerElement(root.evalNode("typeHandlers"));
       mapperElement(root.evalNode("mappers"));
     } catch (Exception e) {
@@ -168,6 +172,7 @@ public class XMLConfigBuilder extends BaseBuilder {
           String type = child.getStringAttribute("type");
           try {
             Class<?> clazz = Resources.classForName(type);
+            //alias 为空，需要解析注解
             if (alias == null) {
               typeAliasRegistry.registerAlias(clazz);
             } else {
@@ -361,16 +366,22 @@ public class XMLConfigBuilder extends BaseBuilder {
   private void mapperElement(XNode parent) throws Exception {
     if (parent != null) {
       for (XNode child : parent.getChildren()) {
+        //解析 package 节点，按照包路径方式
         if ("package".equals(child.getName())) {
           String mapperPackage = child.getStringAttribute("name");
           configuration.addMappers(mapperPackage);
         } else {
+          //解析单独配置
+          //通过三种方式配置地址
           String resource = child.getStringAttribute("resource");
           String url = child.getStringAttribute("url");
+          //配置类 只能是解析类上注解
           String mapperClass = child.getStringAttribute("class");
+          //三个值 只能有一个值是有值的
           if (resource != null && url == null && mapperClass == null) {
             ErrorContext.instance().resource(resource);
             InputStream inputStream = Resources.getResourceAsStream(resource);
+            //解析 resource xml
             XMLMapperBuilder mapperParser = new XMLMapperBuilder(inputStream, configuration, resource, configuration.getSqlFragments());
             mapperParser.parse();
           } else if (resource == null && url != null && mapperClass == null) {
@@ -379,6 +390,7 @@ public class XMLConfigBuilder extends BaseBuilder {
             XMLMapperBuilder mapperParser = new XMLMapperBuilder(inputStream, configuration, url, configuration.getSqlFragments());
             mapperParser.parse();
           } else if (resource == null && url == null && mapperClass != null) {
+            //解析类上注解
             Class<?> mapperInterface = Resources.classForName(mapperClass);
             configuration.addMapper(mapperInterface);
           } else {

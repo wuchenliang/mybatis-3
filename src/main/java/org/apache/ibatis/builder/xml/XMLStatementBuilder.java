@@ -55,6 +55,7 @@ public class XMLStatementBuilder extends BaseBuilder {
 
   public void parseStatementNode() {
     String id = context.getStringAttribute("id");
+    // sql 配置上的数据库类型别名
     String databaseId = context.getStringAttribute("databaseId");
 
     if (!databaseIdMatchesCurrent(id, databaseId, this.requiredDatabaseId)) {
@@ -62,10 +63,14 @@ public class XMLStatementBuilder extends BaseBuilder {
     }
 
     String nodeName = context.getNode().getNodeName();
+    // 转换出 CRUD FLUSH
     SqlCommandType sqlCommandType = SqlCommandType.valueOf(nodeName.toUpperCase(Locale.ENGLISH));
     boolean isSelect = sqlCommandType == SqlCommandType.SELECT;
+    //是否刷新缓存，默认 增删改 直接强制刷新缓存 查询不刷新缓存
     boolean flushCache = context.getBooleanAttribute("flushCache", !isSelect);
+    //使用二级缓存 默认查询使用二级缓存
     boolean useCache = context.getBooleanAttribute("useCache", isSelect);
+    //嵌套结果集
     boolean resultOrdered = context.getBooleanAttribute("resultOrdered", false);
 
     // Include Fragments before parsing
